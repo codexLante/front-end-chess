@@ -5,7 +5,7 @@ import chessImage from "../assets/wp.png";
 import axios from "axios";
 
 function Register({ onRegister }) {
-  const [name, setName] = useState("");
+  const [username, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -13,37 +13,41 @@ function Register({ onRegister }) {
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
-  const handleRegister = () => {
-    setIsLoading(true);
-    setErrorMessage("");
-    setSuccessMessage("");
+  
+const handleRegister = () => {
+  setIsLoading(true);
+  setErrorMessage("");
+  setSuccessMessage("");
 
-    axios({
-      method: "POST",
-      url: "http://127.0.0.1:5000/user/add",
-      data: { name, email, password },
+  axios({
+    method: "POST",
+    url: "http://127.0.0.1:5000/user/add",
+    data: { username, email, password },
+  })
+    .then((res) => {
+      const userData = res.data.user; 
+      
+
+      if (res.data.token) {
+        localStorage.setItem('access_token', res.data.token);
+      }
+      
+      setSuccessMessage("Umesajiliwa kikamilifu!");
+      onRegister(userData);  
+      navigate("/game");
     })
-      .then((res) => {
-        const user = res.data.member;
-        setSuccessMessage("Umesajiliwa kikamilifu!");
-        setName("");
-        setEmail("");
-        setPassword("");
-        onRegister(user);
-        navigate("/game");
-      })
-      .catch((e) => {
-        console.log("Registration error:", e);
-        setErrorMessage(
-          typeof e?.response?.data?.error === "string"
-            ? e.response.data.error
-            : "Usajili umeshindikana. Tafadhali jaribu tena."
-        );
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
+    .catch((e) => {
+      console.log("Registration error:", e);
+      setErrorMessage(
+        typeof e?.response?.data?.error === "string"
+          ? e.response.data.error
+          : "Usajili umeshindikana. Tafadhali jaribu tena."
+      );
+    })
+    .finally(() => {
+      setIsLoading(false);
+    });
+};
 
   const goToLogin = () => {
     navigate("/login");
@@ -64,8 +68,8 @@ function Register({ onRegister }) {
           id="name"
           className="login-input"
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={username}
+          onChange={(e) => setUserName(e.target.value)}
           placeholder="Andika jina lako"
         />
 

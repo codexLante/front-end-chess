@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/login.css";
 import chessImage from "../assets/wp.png";
@@ -12,34 +12,39 @@ function Login({ onStart }) {
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    setIsLoading(true);
-    setErrorMessage("");
-    setSuccessMessage("");
+const handleLogin = () => {
+  setIsLoading(true);
+  setErrorMessage("");
+  setSuccessMessage("");
 
-    axios({
-      method: "POST",
-      url: "http://127.0.0.1:5000/user/login",
-      data: { email, password },
+  axios({
+    method: "POST",
+    url: "http://127.0.0.1:5000/user/login",
+    data: { email, password },
+  })
+    .then((res) => {
+      const userData = res.data.user; 
+      
+      if (res.data.token) {
+        localStorage.setItem('access_token', res.data.token);
+      }  
+      
+      setSuccessMessage("Umeingia kikamilifu!");
+      onStart(userData);  
+      navigate("/game");
     })
-      .then((res) => {
-        const user = res.data;
-        setSuccessMessage("Umeingia kikamilifu!");
-        onStart(user);
-        navigate("/game");
-      })
-      .catch((e) => {
-        console.log("Login error:", e);
-        setErrorMessage(
-          typeof e?.response?.data?.message === "string"
-            ? e.response.data.message
-            : "Imeshindikana kuingia. Tafadhali jaribu tena."
-        );
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
+    .catch((e) => {
+      console.log("Login error:", e);
+      setErrorMessage(
+        typeof e?.response?.data?.error === "string"
+          ? e.response.data.error
+          : "Imeshindikana kuingia. Tafadhali jaribu tena."
+      );
+    })
+    .finally(() => {
+      setIsLoading(false);
+    });
+};
 
   const goToRegister = () => {
     navigate("/register");

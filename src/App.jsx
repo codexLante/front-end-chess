@@ -20,12 +20,12 @@ function GamePage({ user, onLogout }) {
   return (
     <div className="game-wrapper">
       <div className="user-info">
-        <span>Welcome, {user.name}!</span>
+        <span>Welcome, {user.username}!</span>
         <button onClick={handleLogout} className="logout-button">
           Logout
         </button>
       </div>
-      <ChessBoard playerName={user.name} userId={user.id} />
+    <ChessBoard playerName={user.username} userId={user.id} />
     </div>
   );
 }

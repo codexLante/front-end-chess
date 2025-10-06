@@ -35,13 +35,29 @@ const generateInitialPieces = () => {
 
 
   const coordKey = (x, y) => `${x},${y}`;
+ const token = localStorage.getItem("access_token"); 
 
 useEffect(() => {
   if (hasCreatedGame) return;
+  
+  if (!token) {
+    console.error("No token found");
+    return;
+  }
+  
+  if (!userId) {
+    console.error("No userId found");
+    return;
+  }
+
+  console.log("Creating game for user:", userId);
 
   axios({
     method: "POST",
     url: "http://127.0.0.1:5000/game/create",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
     data: { user_id: userId }
   })
   .then((res) => {
@@ -74,9 +90,9 @@ useEffect(() => {
     }
   })
   .catch((e) => {
-    console.log("Error creating game:", e);
+    console.error("Error creating game:", e.response?.data || e.message);
   });
-}, [hasCreatedGame]);
+}, [hasCreatedGame, token, userId]);
 
   const getBoardState = () => {
     return Object.entries(pieces)
@@ -146,6 +162,9 @@ const handleMovePiece = (targetCoords) => {
   axios({
     method: "POST",
     url: `http://127.0.0.1:5000/move/${gameId}`,
+    headers: {
+    Authorization: `Bearer ${token}`
+    },
     data: {
       player: "white",
       from_x: selectedPosition.x + 1,
@@ -155,7 +174,7 @@ const handleMovePiece = (targetCoords) => {
     }
   })
   .then((res) => {
-    console.log("Full backend response:", res.data);
+    console.log("backend response:", res.data);
     
     const gameState = res?.data?.game_state;
     const currentTurn = res?.data?.current_turn;
@@ -186,35 +205,45 @@ const handleMovePiece = (targetCoords) => {
       console.error("No game state in response");
     }
 
-    if (aiTurnNext) {
-      console.log("Scheduling AI move...");
-      setTimeout(() => {
-        axios.post(`http://127.0.0.1:5000/move/${gameId}`)
-          .then((aiRes) => {
-            console.log("AI move response:", aiRes.data);
-            const aiGameState = aiRes.data.game_state;
-            const aiCurrentTurn = aiRes.data.current_turn;
+if (aiTurnNext) {
+  console.log("Scheduling AI move...");
 
-            try {
-              const parsedAIState = JSON.parse(aiGameState);
-              const updatedPieces = {};
-              parsedAIState.forEach(piece => {
-                const key = `${piece.x},${piece.y}`;
-                const value = `${piece.color}-${piece.type.toLowerCase()}`;
-                updatedPieces[key] = value;
-              });
+  setTimeout(() => {
+    axios({
+      method: "POST",
+      url: `http://127.0.0.1:5000/move/${gameId}`,
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      data: {
+        player: "blue"
+      }
+    })
+      .then((aiRes) => {
+        console.log("AI move response:", aiRes.data);
+        const aiGameState = aiRes.data.game_state;
+        const aiCurrentTurn = aiRes.data.current_turn;
 
-              setPieces(updatedPieces);
-              setTurn(aiCurrentTurn);
-            } catch (error) {
-              console.error("Error parsing AI game state:", error);
-            }
-          })
-          .catch((err) => {
-            console.error("AI move failed:", err.response?.data?.error || err.message);
+        try {
+          const parsedAIState = JSON.parse(aiGameState);
+          const updatedPieces = {};
+          parsedAIState.forEach(piece => {
+            const key = `${piece.x},${piece.y}`;
+            const value = `${piece.color}-${piece.type.toLowerCase()}`;
+            updatedPieces[key] = value;
           });
-      }, 5000); 
-    }
+
+          setPieces(updatedPieces);
+          setTurn(aiCurrentTurn);
+        } catch (error) {
+          console.error("Error parsing AI game state:", error);
+        }
+      })
+      .catch((err) => {
+        console.error("AI move failed:", err.response?.data?.error || err.message);
+      });
+  }, 5000);
+  }
   })
   .catch((error) => {
     console.error("Move failed:", error);
