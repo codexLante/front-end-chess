@@ -11,25 +11,33 @@ const isEnemy = (x, y, board, color) => {
 };
 
 function calculateValidMoves(position, board, color) {
-  const direction = color === 'white' ? 1 : -1;
-  const startRow = color === 'white' ? 1 : 6;
-  const promotionRow = color === 'white' ? 7 : 0;
+  // Updated coordinate system:
+  // Row 0-1: Blue pieces (top)
+  // Row 6-7: White pieces (bottom)
+  
+  // White moves UP (decreasing Y: 7 -> 6 -> 5...)
+  // Blue moves DOWN (increasing Y: 0 -> 1 -> 2...)
+  const direction = color === 'white' ? -1 : 1;
+  const startRow = color === 'white' ? 6 : 1;
+  const promotionRow = color === 'white' ? 0 : 7;
 
   const { x, y } = position;
   const moves = [];
 
+  // One step forward
   const oneStepY = y + direction;
-  const twoStepY = y + 2 * direction;
-
   if (isOnBoard(x, oneStepY) && isEmpty(x, oneStepY, board)) {
     const type = oneStepY === promotionRow ? 'promotion-move' : 'move';
     moves.push({ x, y: oneStepY, type });
 
+    // Two steps forward from starting position
+    const twoStepY = y + 2 * direction;
     if (y === startRow && isOnBoard(x, twoStepY) && isEmpty(x, twoStepY, board)) {
       moves.push({ x, y: twoStepY, type: 'move' });
     }
   }
 
+  // Diagonal captures
   [-1, 1].forEach(dx => {
     const newX = x + dx;
     const newY = y + direction;
@@ -39,16 +47,23 @@ function calculateValidMoves(position, board, color) {
       moves.push({ x: newX, y: newY, type });
     }
 
+    // En passant
     const last = board.lastMove;
-    if (
-      last &&
-      last.piece === (color === 'white' ? 'blue-pawn' : 'white-pawn') &&
-      last.from.y === (color === 'white' ? 6 : 1) &&
-      last.to.y === (color === 'white' ? 4 : 3) &&
-      last.to.x === newX &&
-      y === (color === 'white' ? 4 : 3)
-    ) {
-      moves.push({ x: newX, y: newY, type: 'en-passant' });
+    if (last) {
+      const enemyPawn = color === 'white' ? 'blue-pawn' : 'white-pawn';
+      const enemyStartRow = color === 'white' ? 1 : 6;
+      const enemyDoubleStepRow = color === 'white' ? 3 : 4;
+      const currentRow = color === 'white' ? 3 : 4;
+
+      if (
+        last.piece === enemyPawn &&
+        last.from.y === enemyStartRow &&
+        last.to.y === enemyDoubleStepRow &&
+        last.to.x === newX &&
+        y === currentRow
+      ) {
+        moves.push({ x: newX, y: newY, type: 'en-passant' });
+      }
     }
   });
 
